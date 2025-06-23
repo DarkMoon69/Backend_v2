@@ -9,7 +9,7 @@ import java.util.List;
 @Getter
 @Setter
 public class PedidoRequestDTO {
-
+    private Long pedidoId;
     private Long clienteId;
     private Long tipoDocumentoId;
     private String numeroDocumento;
@@ -22,6 +22,9 @@ public class PedidoRequestDTO {
     private Long operarioId;
     private Long vehiculoId;
     private LocalDate fechaPedido;
+    private Long estadoPedidoId;
+    private String estadoPedido;
     private List<ProductoRequestDTO> productos;
-
+    private String fotografiaEntrega;
+    private String firmaCliente;
 }

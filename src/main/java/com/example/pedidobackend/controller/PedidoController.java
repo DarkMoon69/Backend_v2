@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -39,21 +40,21 @@ public class PedidoController {
     }
 
     @PostMapping("/guardar")
-    public ResponseEntity<?> guardar (@RequestBody PedidoRequestDTO requestDTO){
+    public ResponseEntity<?> guardar(@RequestBody PedidoRequestDTO requestDTO) {
         try {
             RespuestaControlador rc = pedidoService.guardar(requestDTO);
             return ResponseEntity.ok(rc);
-        }catch (Exception ex){
+        } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
 
     @PutMapping("/editar/{idPedido}")
-    public ResponseEntity<?> guardar (@PathVariable Long idPedido, @RequestBody PedidoRequestDTO requestDTO){
+    public ResponseEntity<?> guardar(@PathVariable Long idPedido, @RequestBody PedidoRequestDTO requestDTO) {
         try {
             RespuestaControlador rc = pedidoService.editar(idPedido, requestDTO);
             return ResponseEntity.ok(rc);
-        }catch (Exception ex){
+        } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
@@ -64,4 +65,23 @@ public class PedidoController {
         return ResponseEntity.ok(rc);
     }
 
+    @GetMapping("/operario/{idOperario}")
+    public ResponseEntity<?> obtenerPedidosPorOperario(@PathVariable("idOperario") Long idOperario) {
+        return ResponseEntity.ok(pedidoService.getByIdOperario(idOperario));
+    }
+
+    @PutMapping("/actualizar-detalle/{idPedido}")
+    public ResponseEntity<?> actualizarFotoFirma(
+            @PathVariable Long idPedido,
+            @RequestParam String fotografiaEntrega,
+            @RequestParam String firmaCliente,
+            @RequestParam Long estadoPedidoId) {
+        try {
+            System.out.println("Actualizando estado, foto y firma del pedido con ID: " + idPedido);
+            pedidoService.editarEstadoFotoFirma(idPedido, fotografiaEntrega, firmaCliente, estadoPedidoId);
+            return ResponseEntity.ok().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
 }

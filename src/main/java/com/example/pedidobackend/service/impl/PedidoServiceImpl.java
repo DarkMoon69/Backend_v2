@@ -45,6 +45,49 @@ public class PedidoServiceImpl implements PedidoService {
     RespuestaControladorServicio respuestaControladorServicio;
 
     @Override
+    public List<PedidoRequestDTO> getByIdOperario(Long operarioId) {
+        List<Pedido> pedidos = pedidoRepository.findByOperarioIdOperario(operarioId);
+        List<PedidoRequestDTO> resultado = new ArrayList<>();
+        for (Pedido pedido : pedidos) {
+            PedidoRequestDTO requestDTO = new PedidoRequestDTO();
+            requestDTO.setPedidoId(pedido.getId());
+            requestDTO.setEstadoPedidoId(pedido.getEstadoPedido().getId());
+            requestDTO.setEstadoPedido(pedido.getEstadoPedido().getNombre());
+            requestDTO.setClienteId(pedido.getCliente().getId());
+            requestDTO.setTipoDocumentoId(pedido.getCliente().getTipoDocumento().getId());
+            requestDTO.setNumeroDocumento(pedido.getCliente().getNumeroDocumento());
+            requestDTO.setCelular(pedido.getCliente().getNumeroCelular());
+            requestDTO.setApePaterno(pedido.getCliente().getApePaterno());
+            requestDTO.setApeMaterno(pedido.getCliente().getApeMaterno());
+            requestDTO.setNombre(pedido.getCliente().getNombres());
+            requestDTO.setDireccion(pedido.getCliente().getDireccion());
+            requestDTO.setEmail(pedido.getCliente().getCorreoElectronico());
+            if (pedido.getOperario() != null) {
+                requestDTO.setOperarioId(pedido.getOperario().getId());
+            }
+            if (pedido.getVehiculo() != null) {
+                requestDTO.setVehiculoId(pedido.getVehiculo().getId());
+            }
+            if (pedido.getFechaPedido() != null) {
+                requestDTO.setFechaPedido(pedido.getFechaPedido());
+            }
+            List<DetallePedido> detalles = detallePedidoRepository.findByPedidoIdAndEstadoTrue(pedido.getId());
+            List<ProductoRequestDTO> listado = new ArrayList<>();
+            for (DetallePedido detallePedido : detalles) {
+                ProductoRequestDTO productoRequestDTO = new ProductoRequestDTO();
+                productoRequestDTO.setProductoId(detallePedido.getProducto().getId());
+                productoRequestDTO.setProducto(detallePedido.getProducto().getNombre());
+                productoRequestDTO.setCodigo(detallePedido.getProducto().getCodigoSku());
+                productoRequestDTO.setCantidad(detallePedido.getCantidad());
+                listado.add(productoRequestDTO);
+            }
+            requestDTO.setProductos(listado);
+            resultado.add(requestDTO);
+        }
+        return resultado;
+    }
+
+    @Override
     public PedidoRequestDTO getById(Long id) {
         PedidoRequestDTO requestDTO = new PedidoRequestDTO();
 
@@ -58,6 +101,10 @@ public class PedidoServiceImpl implements PedidoService {
         requestDTO.setNombre(pedido.getCliente().getNombres());
         requestDTO.setDireccion(pedido.getCliente().getDireccion());
         requestDTO.setEmail(pedido.getCliente().getCorreoElectronico());
+        requestDTO.setEstadoPedidoId(pedido.getEstadoPedido().getId());
+        requestDTO.setEstadoPedido(pedido.getEstadoPedido().getNombre());
+        requestDTO.setFirmaCliente(pedido.getFirmaCliente());
+        requestDTO.setFotografiaEntrega(pedido.getFotografiaEntrega());
         if (pedido.getOperario() != null) {
             requestDTO.setOperarioId(pedido.getOperario().getId());
         }
@@ -70,7 +117,7 @@ public class PedidoServiceImpl implements PedidoService {
 
         List<DetallePedido> detalles = detallePedidoRepository.findByPedidoIdAndEstadoTrue(id);
         List<ProductoRequestDTO> listado = new ArrayList<>();
-        for (DetallePedido detallePedido: detalles) {
+        for (DetallePedido detallePedido : detalles) {
             ProductoRequestDTO productoRequestDTO = new ProductoRequestDTO();
             productoRequestDTO.setProductoId(detallePedido.getProducto().getId());
             productoRequestDTO.setProducto(detallePedido.getProducto().getNombre());
@@ -85,13 +132,15 @@ public class PedidoServiceImpl implements PedidoService {
 
     @Override
     public BusquedaResponseDTO busquedaPaginada(PedidoBusquedaRequestDTO dto) {
-        List<Map<String, Object>> data = pedidoRepository.busquedaPaginadaPedido(dto.getCliente(), dto.getEstadoPedidoId(), dto.getOperarioId(), dto.getMax(), dto.getLimite());
-        Integer cantidadTotal = pedidoRepository.busquedaPaginadaPedidoContar(dto.getCliente(), dto.getEstadoPedidoId(), dto.getOperarioId(), dto.getMax(), dto.getLimite());
+        List<Map<String, Object>> data = pedidoRepository.busquedaPaginadaPedido(dto.getCliente(),
+                dto.getEstadoPedidoId(), dto.getOperarioId(), dto.getMax(), dto.getLimite());
+        Integer cantidadTotal = pedidoRepository.busquedaPaginadaPedidoContar(dto.getCliente(), dto.getEstadoPedidoId(),
+                dto.getOperarioId(), dto.getMax(), dto.getLimite());
         BusquedaResponseDTO responseDTO = new BusquedaResponseDTO();
         responseDTO.setData(data);
         responseDTO.setPaginaActual(dto.getLimite());
         responseDTO.setTotalRegistros(cantidadTotal);
-        responseDTO.setCantidadPorPagina( dto.getMax());
+        responseDTO.setCantidadPorPagina(dto.getMax());
         return responseDTO;
     }
 
@@ -115,7 +164,8 @@ public class PedidoServiceImpl implements PedidoService {
             cliente.setApePaterno(pedidoRequestDTO.getApePaterno());
             cliente.setApeMaterno(pedidoRequestDTO.getApeMaterno());
             cliente.setNombres(pedidoRequestDTO.getNombre());
-            cliente.setNombrecompleto(pedidoRequestDTO.getApePaterno() + ' ' + pedidoRequestDTO.getApeMaterno() + ' ' + pedidoRequestDTO.getNombre());
+            cliente.setNombrecompleto(pedidoRequestDTO.getApePaterno() + ' ' + pedidoRequestDTO.getApeMaterno() + ' '
+                    + pedidoRequestDTO.getNombre());
             cliente.setTipoDocumento(tipoDocumento);
             cliente.setNumeroDocumento(pedidoRequestDTO.getNumeroDocumento());
             cliente.setNumeroCelular(pedidoRequestDTO.getCelular());
@@ -142,7 +192,7 @@ public class PedidoServiceImpl implements PedidoService {
 
         pedidoRepository.save(pedido);
 
-        for (ProductoRequestDTO productoRequestDTO: pedidoRequestDTO.getProductos()) {
+        for (ProductoRequestDTO productoRequestDTO : pedidoRequestDTO.getProductos()) {
             DetallePedido detallePedido = new DetallePedido();
             Producto producto = new Producto();
             if (productoRequestDTO.getProductoId() > 0L) {
@@ -189,7 +239,8 @@ public class PedidoServiceImpl implements PedidoService {
         pedido.setEstadoPedido(estadoPedido);
         pedidoRepository.save(pedido);
 
-        RespuestaControlador respuestaControlador = respuestaControladorServicio.obtenerRespuestaDeExitoActualizar("Pedido");
+        RespuestaControlador respuestaControlador = respuestaControladorServicio
+                .obtenerRespuestaDeExitoActualizar("Pedido");
         respuestaControlador.setExtraInfo(pedido.getId());
         return respuestaControlador;
     }
@@ -204,5 +255,17 @@ public class PedidoServiceImpl implements PedidoService {
         pedidoRepository.save(pedido);
         respuestaControlador = respuestaControladorServicio.obtenerRespuestaDeExitoAnular("Pedido");
         return respuestaControlador;
+    }
+
+    @Override
+    public void editarEstadoFotoFirma(Long pedidoId, String fotografiaEntrega, String firmaCliente,
+            Long estadoPedidoId) {
+        try {
+
+            pedidoRepository.actualizarEstadoFotoFirma(pedidoId, fotografiaEntrega, firmaCliente, estadoPedidoId);
+        } catch (Exception e) {
+            System.err.println("Error al actualizar el pedido: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
