@@ -30,9 +30,11 @@ public class UsuarioServiceImpl implements UsuarioService {
                 LoginResponseDTO loginResponseDTO = new LoginResponseDTO();
                 loginResponseDTO.setDetalle(listado);
                 if (usuario.getOperario() != null) {
+                    loginResponseDTO.setIdUsuario(usuario.getOperario().getId());
                     loginResponseDTO.setNumeroIdentificacionUsuarioLogueado(usuario.getOperario().getNumeroDocumento());
                     loginResponseDTO.setNombreUsuarioLogueado(usuario.getOperario().getNombrecompleto());
                 } else {
+                    loginResponseDTO.setIdUsuario(null);
                     loginResponseDTO.setNombreUsuarioLogueado("ADMINISTRADOR");
                     loginResponseDTO.setNumeroIdentificacionUsuarioLogueado("ADMINISTRADOR");
                 }
@@ -43,10 +45,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         } else {
             respuestaControlador = RespuestaControlador.obtenerRespuestaDeError(mensajeError);
         }
+
         return respuestaControlador;
     }
 
-    private List<ObjetosMenuResponseDTO> obtenerMenuUsuarioLogueado(){
+    private List<ObjetosMenuResponseDTO> obtenerMenuUsuarioLogueado() {
         List<ObjetosMenuResponseDTO> objetosMenu = new ArrayList<>();
 
         ObjetosMenuResponseDTO menu1 = new ObjetosMenuResponseDTO();
