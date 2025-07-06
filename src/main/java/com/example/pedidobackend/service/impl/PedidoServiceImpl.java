@@ -13,6 +13,7 @@ import com.example.pedidobackend.repository.ClienteRepository;
 import com.example.pedidobackend.repository.DetallePedidoRepository;
 import com.example.pedidobackend.repository.PedidoRepository;
 import com.example.pedidobackend.repository.ProductoRepository;
+import com.example.pedidobackend.service.EmailService;
 import com.example.pedidobackend.service.PedidoService;
 import com.example.pedidobackend.util.RespuestaControlador;
 import com.example.pedidobackend.util.dto.BusquedaResponseDTO;
@@ -43,6 +44,9 @@ public class PedidoServiceImpl implements PedidoService {
 
     @Autowired
     RespuestaControladorServicio respuestaControladorServicio;
+
+    @Autowired
+    EmailService emailService;
 
     @Override
     public List<PedidoRequestDTO> getByIdOperario(Long operarioId) {
@@ -207,6 +211,27 @@ public class PedidoServiceImpl implements PedidoService {
             detallePedido.setCantidad(productoRequestDTO.getCantidad());
             detallePedidoRepository.save(detallePedido);
         }
+
+        String nombreCompleto = pedidoRequestDTO.getApePaterno() + " " + pedidoRequestDTO.getApeMaterno() + " "
+                + pedidoRequestDTO.getNombre();
+
+        StringBuilder detalleProductos = new StringBuilder();
+        for (ProductoRequestDTO productoRequestDTO : pedidoRequestDTO.getProductos()) {
+            detalleProductos.append("- ").append(productoRequestDTO.getProducto())
+                    .append(" (Código: ").append(productoRequestDTO.getCodigo())
+                    .append(", Cantidad: ").append(productoRequestDTO.getCantidad()).append(")\n");
+        }
+
+        String mensaje = "Estimado(a) " + nombreCompleto + ",\n\n" +
+                "Su pedido ha sido recibido y está listo para su entrega.\n\n" +
+                "Detalles del pedido:\n" +
+                "Número de pedido: " + pedido.getId() + "\n" +
+                "Dirección de entrega: " + pedidoRequestDTO.getDireccion() + "\n\n" +
+                "Productos:\n" + detalleProductos.toString() + "\n" +
+                "Gracias por su preferencia.";
+
+        emailService.enviarCorreo(pedidoRequestDTO.getEmail(),
+                "Confirmación de pedido recibido y listo para su entrega", mensaje);
 
         RespuestaControlador respuestaControlador = respuestaControladorServicio.obtenerRespuestaDeExitoCrear("Pedido");
         respuestaControlador.setExtraInfo(pedido.getId());

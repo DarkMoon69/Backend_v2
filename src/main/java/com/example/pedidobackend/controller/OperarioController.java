@@ -44,12 +44,15 @@ public class OperarioController {
     }
 
     @PostMapping("/guardar")
-    public ResponseEntity<?> guardar (@RequestBody Operario operario){
+    public ResponseEntity<?> guardar(@RequestBody Operario operario) {
         try {
             RespuestaControlador rc = operarioService.guardar(operario);
             return ResponseEntity.ok(rc);
-        }catch (Exception ex){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception ex) {
+            System.out.println("Error al guardar operario: " + ex.getMessage());
+            ex.printStackTrace(); // Agregar esto para ver el stack trace completo
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(RespuestaControlador.obtenerRespuestaDeError("Error interno: " + ex.getMessage()));
         }
     }
 

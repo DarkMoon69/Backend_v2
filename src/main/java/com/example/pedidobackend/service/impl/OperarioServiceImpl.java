@@ -38,25 +38,44 @@ public class OperarioServiceImpl implements OperarioService {
 
     @Override
     public RespuestaControlador guardar(Operario operario) {
+        String validacion = operarioRepository.validarOperarioUnico(
+                operario.getNumeroDocumento(),
+                operario.getCorreoElectronico());
+
+        if ("DNI_DUPLICADO".equals(validacion)) {
+            return RespuestaControlador.obtenerRespuestaDeError(
+                    "Ya existe un operario registrado con el número de documento: " + operario.getNumeroDocumento());
+        }
+
+        if ("EMAIL_DUPLICADO".equals(validacion)) {
+            return RespuestaControlador.obtenerRespuestaDeError(
+                    "Ya existe un operario registrado con el correo electrónico: " + operario.getCorreoElectronico());
+        }
+
         operario.setCargo("OPERARIO");
-        operario.setNombrecompleto(operario.getApePaterno() + ' ' + operario.getApeMaterno() + ' ' + operario.getNombres());
+        operario.setNombrecompleto(
+                operario.getApePaterno() + ' ' + operario.getApeMaterno() + ' ' + operario.getNombres());
         operario.setEstadoOperario(Constantes.OPERARIO_ACTIVO);
         operarioRepository.save(operario);
         Usuario usuario = new Usuario();
         usuario.setOperario(operario);
-        usuario.setNombreUsuario(generarUsuario(operario.getNombres(), operario.getApePaterno(), operario.getApeMaterno()));
+        usuario.setNombreUsuario(
+                generarUsuarioUnico(operario.getNombres(), operario.getApePaterno(), operario.getApeMaterno(),
+                        operario.getNumeroDocumento()));
         usuario.setContraseniaHash(generarClaveAleatoria());
         usuario.setRol("OPERARIO");
         usuarioRepository.save(usuario);
 
-        String mensaje = "Estimado(a) " + operario.getApePaterno() + " " + operario.getApeMaterno() + " " + operario.getNombres() +
+        String mensaje = "Estimado(a) " + operario.getApePaterno() + " " + operario.getApeMaterno() + " "
+                + operario.getNombres() +
                 ", se le envían sus credenciales para el sistema: \n " +
-                " Login : " + usuario.getNombreUsuario() + "\n"+
+                " Login : " + usuario.getNombreUsuario() + "\n" +
                 " Contraseña : " + usuario.getContraseniaHash();
 
         emailService.enviarCorreo(operario.getCorreoElectronico(), "Credenciales Creadas", mensaje);
 
-        RespuestaControlador respuestaControlador = respuestaControladorServicio.obtenerRespuestaDeExitoCrear("Operario");
+        RespuestaControlador respuestaControlador = respuestaControladorServicio
+                .obtenerRespuestaDeExitoCrear("Operario");
         respuestaControlador.setExtraInfo(operario.getId());
         return respuestaControlador;
     }
@@ -87,21 +106,41 @@ public class OperarioServiceImpl implements OperarioService {
 
     @Override
     public BusquedaResponseDTO busquedaPaginada(OperarioBusquedaRequestDTO dto) {
-        List<Map<String, Object>> data = operarioRepository.busquedaPaginadaOperario(dto.getNombre(), dto.getApellidoPaterno(), dto.getApellidoMaterno(), dto.getTipoDocumentoId(),
+        List<Map<String, Object>> data = operarioRepository.busquedaPaginadaOperario(dto.getNombre(),
+                dto.getApellidoPaterno(), dto.getApellidoMaterno(), dto.getTipoDocumentoId(),
                 dto.getNumeroDocumento(), dto.getEstadoOperario(), dto.getMax(), dto.getLimite());
-        Integer cantidadTotal = operarioRepository.busquedaPaginadaOperarioContar(dto.getNombre(), dto.getApellidoPaterno(), dto.getApellidoMaterno(), dto.getTipoDocumentoId(),
+        Integer cantidadTotal = operarioRepository.busquedaPaginadaOperarioContar(dto.getNombre(),
+                dto.getApellidoPaterno(), dto.getApellidoMaterno(), dto.getTipoDocumentoId(),
                 dto.getNumeroDocumento(), dto.getEstadoOperario(), dto.getMax(), dto.getLimite());
         BusquedaResponseDTO responseDTO = new BusquedaResponseDTO();
         responseDTO.setData(data);
         responseDTO.setPaginaActual(dto.getLimite());
         responseDTO.setTotalRegistros(cantidadTotal);
-        responseDTO.setCantidadPorPagina( dto.getMax());
+        responseDTO.setCantidadPorPagina(dto.getMax());
         return responseDTO;
     }
 
     @Override
     public List<Operario> obtenerTodos() {
         return operarioRepository.findByEstadoTrue();
+    }
+
+    private String generarUsuarioUnico(String nombre, String apepat, String apemat, String numeroDocumento) {
+        String usuarioBase = generarUsuario(nombre, apepat, apemat);
+
+        if (usuarioRepository.existsByNombreUsuarioAndEstadoTrue(usuarioBase)) {
+            String ultimasCifras = numeroDocumento.substring(numeroDocumento.length() - 2);
+            String usuarioConSufijo = usuarioBase + ultimasCifras;
+
+            if (usuarioRepository.existsByNombreUsuarioAndEstadoTrue(usuarioConSufijo)) {
+                String ultimas4Cifras = numeroDocumento.substring(numeroDocumento.length() - 4);
+                return usuarioBase + ultimas4Cifras;
+            }
+
+            return usuarioConSufijo;
+        }
+
+        return usuarioBase;
     }
 
     private String generarUsuario(String nombre, String apepat, String apemat) {
